@@ -22,7 +22,7 @@ from __future__ import annotations
 
 import random
 from dataclasses import dataclass, field, replace
-from typing import Iterable, Optional
+from typing import Any, Iterable, Optional
 
 # Group-size sweet spot (doc 01 failure mode F8: scale mismatch).
 TARGET_MIN = 6
@@ -84,6 +84,27 @@ class RotationProposal:
     unplaced: list[str] = field(default_factory=list)
 
 
+class _MergedMetHistory:
+    """Read-only view merging a base met_history with extra implied pairs.
+
+    Exposes only ``.get(member_id, default)`` — the sole interface the
+    engine needs — so it works whether ``base`` is a plain dict (the
+    in-memory/JSON repositories) or a dict-like proxy such as
+    PostgresRepository's met_history, which has no ``.items()``.
+    """
+
+    def __init__(self, base: Any, implied: dict[str, set[str]]) -> None:
+        self._base = base
+        self._implied = implied
+
+    def get(self, member_id: str, default: Optional[set[str]] = None) -> set[str]:
+        merged = set(self._base.get(member_id, set()) or set())
+        merged |= self._implied.get(member_id, set())
+        if not merged:
+            return set() if default is None else default
+        return merged
+
+
 class RotationEngine:
     """Greedy, constraint-aware, keep-50/swap-50 rotation.
 
@@ -135,7 +156,10 @@ class RotationEngine:
         # no lower score than a true newcomer, so ties get broken by id and
         # the dropped members can get filled straight back into their own
         # old group instead of making room for someone new.
-        data_for_fill = replace(data, met_history=self._effective_met_history(data))
+        implied_met = self._implied_met_from_prior_groups(data.prior_groups)
+        data_for_fill = replace(
+            data, met_history=_MergedMetHistory(data.met_history, implied_met)
+        )
 
         proposed: list[ProposedGroup] = []
         unplaced: list[str] = []
@@ -158,18 +182,16 @@ class RotationEngine:
 
         return RotationProposal(groups=proposed, unplaced=unplaced)
 
-    def _effective_met_history(self, data: RotationInput) -> dict[str, set[str]]:
-        """Merge explicit met_history with history implied by prior_groups.
-
-        Returns a new dict of new sets; never mutates ``data``.
-        """
-        effective: dict[str, set[str]] = {
-            mid: set(peers) for mid, peers in data.met_history.items()
-        }
-        for pg in data.prior_groups:
+    @staticmethod
+    def _implied_met_from_prior_groups(
+        prior_groups: list[list[str]],
+    ) -> dict[str, set[str]]:
+        """Pairwise 'met' history implied by having shared a prior group."""
+        implied: dict[str, set[str]] = {}
+        for pg in prior_groups:
             for mid in pg:
-                effective.setdefault(mid, set()).update(p for p in pg if p != mid)
-        return effective
+                implied.setdefault(mid, set()).update(p for p in pg if p != mid)
+        return implied
 
     # ------------------------------------------------------------------ #
     # Step 1 — bucketing

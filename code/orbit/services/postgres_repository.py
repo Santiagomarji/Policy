@@ -175,7 +175,7 @@ class PostgresRepository:
         rows = self._query(
             "SELECT id, name, city, cadence, min_density FROM club"
         )
-        return {r[0]: self._club(r) for r in rows}
+        return {str(r[0]): self._club(r) for r in rows}
 
     @staticmethod
     def _club(r: tuple) -> Club:
