@@ -1,0 +1,22 @@
+# Local dev / self-hosted single-node deployment.
+# `docker compose up` gives you the Orbit API with durable local storage.
+# Runs on any machine with Docker — no cloud account, no Amazon, nothing extra.
+
+services:
+  orbit-api:
+    build: .
+    image: orbit-api:latest
+    container_name: orbit-api
+    ports:
+      - "8080:8080"
+    environment:
+      ORBIT_HOST: "0.0.0.0"
+      ORBIT_PORT: "8080"
+      ORBIT_DB: "/data/orbit.json"
+    volumes:
+      # Named volume keeps the JSON store across restarts/redeploys.
+      - orbit-data:/data
+    restart: unless-stopped
+
+volumes:
+  orbit-data:

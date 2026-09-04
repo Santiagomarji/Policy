@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Orbit — Rotating Social Club</title>
+<style>
+  :root {
+    --bg: #0f1220; --panel: #191d33; --panel2: #222846; --ink: #e8eaf6;
+    --muted: #9aa3c7; --accent: #6c8cff; --good: #3ddc97; --warn: #ff6b6b;
+    --line: #2c3355;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    background: var(--bg); color: var(--ink); line-height: 1.5;
+  }
+  header {
+    padding: 18px 24px; background: linear-gradient(90deg,#1a1f3a,#12152a);
+    border-bottom: 1px solid var(--line); display: flex; align-items: center;
+    gap: 14px; flex-wrap: wrap;
+  }
+  header h1 { font-size: 20px; margin: 0; letter-spacing: 0.5px; }
+  header .tag { color: var(--muted); font-size: 13px; }
+  .wrap { max-width: 1100px; margin: 0 auto; padding: 20px; }
+  .row { display: flex; gap: 20px; flex-wrap: wrap; }
+  .col { flex: 1 1 340px; }
+  .card {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+    padding: 18px; margin-bottom: 20px;
+  }
+  .card h2 { margin: 0 0 12px; font-size: 15px; text-transform: uppercase;
+    letter-spacing: 1px; color: var(--muted); }
+  label { display: block; font-size: 13px; color: var(--muted); margin: 8px 0 4px; }
+  input, select {
+    width: 100%; padding: 9px 11px; border-radius: 8px; border: 1px solid var(--line);
+    background: var(--panel2); color: var(--ink); font-size: 14px;
+  }
+  button {
+    background: var(--accent); color: #0b0e1c; border: 0; border-radius: 8px;
+    padding: 9px 14px; font-weight: 600; cursor: pointer; font-size: 14px;
+    margin-top: 10px;
+  }
+  button.secondary { background: var(--panel2); color: var(--ink);
+    border: 1px solid var(--line); }
+  button:hover { filter: brightness(1.08); }
+  .list { margin: 0; padding: 0; list-style: none; }
+  .list li {
+    padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px;
+    margin-bottom: 8px; background: var(--panel2); font-size: 14px;
+    display: flex; justify-content: space-between; align-items: center; gap: 10px;
+  }
+  .list li .meta { color: var(--muted); font-size: 12px; }
+  .pill { font-size: 11px; padding: 2px 8px; border-radius: 999px;
+    background: var(--panel); color: var(--muted); }
+  .pill.ok { background: rgba(61,220,151,.15); color: var(--good); }
+  .pill.risk { background: rgba(255,107,107,.15); color: var(--warn); }
+  .pill.plain { background: var(--panel); color: var(--muted); }
+  .muted { color: var(--muted); font-size: 13px; }
+  .groupcard { border:1px solid var(--line); border-radius:10px; padding:12px;
+    margin-bottom:10px; background:var(--panel2); }
+  .groupcard h3 { margin:0 0 6px; font-size:14px; }
+  .members { font-size: 13px; color: var(--muted); }
+  .members .owner { color: var(--good); font-weight: 600; }
+  .toast {
+    position: fixed; bottom: 20px; right: 20px; background: var(--panel2);
+    border: 1px solid var(--line); border-left: 4px solid var(--accent);
+    padding: 12px 16px; border-radius: 8px; max-width: 360px; font-size: 13px;
+    box-shadow: 0 8px 30px rgba(0,0,0,.4); opacity: 0; transform: translateY(10px);
+    transition: all .2s; z-index: 50;
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+  .toast.error { border-left-color: var(--warn); }
+  code { background: var(--panel2); padding: 1px 6px; border-radius: 5px;
+    font-size: 12px; color: #cdd6ff; }
+  .split { display:flex; gap:8px; }
+  .split > * { flex: 1; }
+  .steps { font-size:12px; color:var(--muted); margin-top:6px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>🪐 Orbit</h1>
+  <span class="tag">Rotating Social Club — operator console</span>
+  <span style="flex:1"></span>
+  <label style="margin:0; display:flex; align-items:center; gap:6px;">
+    <span class="tag">API</span>
+    <input id="apiBase" style="width:220px" value="" placeholder="(same origin)" />
+  </label>
+  <label style="margin:0; display:flex; align-items:center; gap:6px;">
+    <span class="tag">Token</span>
+    <input id="token" type="password" style="width:150px" placeholder="X-Orbit-Token" />
+  </label>
+  <button id="pingBtn" class="secondary" style="margin:0">Health</button>
+</header>
+
+<div class="wrap">
+  <div class="row">
+    <!-- LEFT COLUMN -->
+    <div class="col">
+      <div class="card">
+        <h2>1 · Clubs</h2>
+        <label>Name</label>
+        <input id="clubName" placeholder="Downtown Creatives" />
+        <div class="split">
+          <div>
+            <label>City</label>
+            <input id="clubCity" placeholder="Austin" />
+          </div>
+          <div>
+            <label>Min density</label>
+            <input id="clubDensity" type="number" value="6" />
+          </div>
+        </div>
+        <button id="createClubBtn">Create club</button>
+        <div style="margin-top:14px"></div>
+        <ul id="clubList" class="list"></ul>
+      </div>
+
+      <div class="card">
+        <h2>2 · Add member</h2>
+        <div class="muted" id="memberClubLabel">Select a club above.</div>
+        <label>Name</label>
+        <input id="memberName" placeholder="Sam Rivera" />
+        <label>Email</label>
+        <input id="memberEmail" placeholder="sam@example.com" />
+        <div class="split">
+          <div>
+            <label>Niche</label>
+            <input id="memberNiche" placeholder="creatives" />
+          </div>
+          <div>
+            <label>Availability</label>
+            <input id="memberAvail" placeholder="tue_pm thu_pm" />
+          </div>
+        </div>
+        <div class="split">
+          <div><label>Lat (optional)</label><input id="memberLat" type="number" placeholder="1.0" /></div>
+          <div><label>Lng (optional)</label><input id="memberLng" type="number" placeholder="1.0" /></div>
+        </div>
+        <button id="addMemberBtn">Add member</button>
+        <div id="densityNote" class="steps"></div>
+      </div>
+    </div>
+
+    <!-- RIGHT COLUMN -->
+    <div class="col">
+      <div class="card">
+        <h2>3 · Cycles &amp; rotation</h2>
+        <div class="muted" id="cycleClubLabel">Select a club to manage cycles.</div>
+        <div class="split">
+          <div>
+            <label>Start date</label>
+            <input id="cycleStart" type="date" />
+          </div>
+          <div>
+            <label>Seed</label>
+            <input id="cycleSeed" type="number" value="1" />
+          </div>
+        </div>
+        <div class="split">
+          <button id="createCycleBtn" class="secondary">Create cycle</button>
+          <button id="runCycleBtn">Run rotation (commit)</button>
+        </div>
+        <div class="steps">Run = keep ~50% + swap ~50% + assign owners.</div>
+        <ul id="cycleList" class="list" style="margin-top:12px"></ul>
+      </div>
+
+      <div class="card">
+        <h2>4 · Groups &amp; events</h2>
+        <div class="muted" id="groupsHint">Select a cycle to view groups.</div>
+        <div id="groups"></div>
+      </div>
+
+      <div class="card">
+        <h2>5 · Health dashboard</h2>
+        <button id="healthBtn" class="secondary">Assess current cycle</button>
+        <ul id="healthList" class="list" style="margin-top:12px"></ul>
+      </div>
+
+      <div class="card">
+        <h2>6 · My Orbit (member view)</h2>
+        <div class="muted">What a member sees — the smooth customer experience.</div>
+        <label>Member</label>
+        <select id="memberPicker"></select>
+        <button id="loadMineBtn" class="secondary">Load my Orbit</button>
+        <div id="memberView" style="margin-top:12px"></div>
+      </div>
+
+      <div class="card">
+        <h2>7 · V1 features</h2>
+        <div class="muted">Monthly gathering, volunteers, billing, notifications.</div>
+
+        <h3 style="font-size:13px;margin:14px 0 4px">Monthly big gathering</h3>
+        <div class="split">
+          <div><label>Date &amp; time</label><input id="bigStart" type="datetime-local" /></div>
+          <div><label>Capacity</label><input id="bigCap" type="number" placeholder="(optional)" /></div>
+        </div>
+        <button id="createBigBtn" class="secondary">Create big event</button>
+        <div id="bigList" class="steps"></div>
+
+        <h3 style="font-size:13px;margin:14px 0 4px">Volunteer coverage</h3>
+        <button id="volBtn" class="secondary">Check coverage</button>
+        <div id="volCoverage" class="steps"></div>
+
+        <h3 style="font-size:13px;margin:14px 0 4px">Notifications</h3>
+        <button id="dispatchBtn" class="secondary">Dispatch due reminders</button>
+        <div id="dispatchNote" class="steps"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+"use strict";
+
+// ---- state ----
+const state = {
+  clubId: null,
+  clubName: null,
+  cycleId: null,
+  members: [],        // members of selected club (for RSVP/attendance)
+};
+
+// ---- tiny helpers ----
+function $(id) { return document.getElementById(id); }
+
+function apiBase() {
+  const v = $("apiBase").value.trim();
+  return v.replace(/\/+$/, ""); // strip trailing slash
+}
+
+function toast(msg, isError) {
+  const t = $("toast");
+  t.textContent = msg;
+  t.className = "toast show" + (isError ? " error" : "");
+  setTimeout(() => { t.className = "toast"; }, 3200);
+}
+
+async function api(method, path, body) {
+  const headers = { "Content-Type": "application/json" };
+  const tok = $("token").value.trim();
+  if (tok) headers["X-Orbit-Token"] = tok;
+  const opts = { method, headers };
+  if (body !== undefined) opts.body = JSON.stringify(body);
+  const res = await fetch(apiBase() + path, opts);
+  let data = null;
+  const text = await res.text();
+  try { data = text ? JSON.parse(text) : null; } catch (e) { data = { raw: text }; }
+  if (!res.ok) {
+    const m = (data && data.error) ? data.error : ("HTTP " + res.status);
+    throw new Error(m);
+  }
+  return data;
+}
+
+// ---- clubs ----
+async function createClub() {
+  const name = $("clubName").value.trim();
+  const city = $("clubCity").value.trim();
+  const min_density = parseInt($("clubDensity").value, 10) || 6;
+  if (!name || !city) { toast("Name and city are required", true); return; }
+  try {
+    await api("POST", "/clubs", { name, city, min_density });
+    $("clubName").value = ""; $("clubCity").value = "";
+    toast("Club created");
+    loadClubs();
+  } catch (e) { toast(e.message, true); }
+}
+
+async function loadClubs() {
+  try {
+    const clubs = await api("GET", "/clubs");
+    const ul = $("clubList");
+    ul.innerHTML = "";
+    if (!clubs.length) { ul.innerHTML = '<li class="muted">No clubs yet.</li>'; return; }
+    clubs.forEach(c => {
+      const li = document.createElement("li");
+      const left = document.createElement("div");
+      left.innerHTML = "<strong>" + escapeHtml(c.name) + "</strong>" +
+        '<div class="meta">' + escapeHtml(c.city) +
+        " · min density " + c.min_density + "</div>";
+      const btn = document.createElement("button");
+      btn.className = "secondary"; btn.style.marginTop = "0";
+      btn.textContent = (state.clubId === c.id) ? "Selected" : "Select";
+      btn.dataset.id = c.id;
+      btn.dataset.name = c.name;
+      btn.addEventListener("click", () => selectClub(btn.dataset.id, btn.dataset.name));
+      li.appendChild(left); li.appendChild(btn);
+      ul.appendChild(li);
+    });
+  } catch (e) { toast(e.message, true); }
+}
+
+function selectClub(id, name) {
+  state.clubId = id; state.clubName = name; state.cycleId = null;
+  $("memberClubLabel").textContent = "Adding to: " + name;
+  $("cycleClubLabel").textContent = "Cycles for: " + name;
+  loadClubs(); loadCycles(); loadMembers();
+  $("groups").innerHTML = ""; $("healthList").innerHTML = "";
+  loadBigEvents();
+  toast("Selected " + name);
+}
+
+// ---- members ----
+async function addMember() {
+  if (!state.clubId) { toast("Select a club first", true); return; }
+  const name = $("memberName").value.trim();
+  const email = $("memberEmail").value.trim();
+  if (!name || !email) { toast("Name and email required", true); return; }
+  const body = {
+    name, email,
+    niche: $("memberNiche").value.trim() || null,
+    availability: $("memberAvail").value.trim(),
+  };
+  const lat = $("memberLat").value.trim(), lng = $("memberLng").value.trim();
+  if (lat && lng) { body.lat = parseFloat(lat); body.lng = parseFloat(lng); }
+  try {
+    await api("POST", "/clubs/" + state.clubId + "/members", body);
+    $("memberName").value = ""; $("memberEmail").value = "";
+    toast("Member added");
+    loadMembers(); checkDensity();
+  } catch (e) { toast(e.message, true); }
+}
+
+async function loadMembers() {
+  if (!state.clubId) return;
+  try {
+    state.members = await api("GET", "/clubs/" + state.clubId + "/members");
+    checkDensity();
+    fillMemberPicker();
+  } catch (e) { /* ignore */ }
+}
+
+function fillMemberPicker() {
+  const sel = $("memberPicker");
+  if (!sel) return;
+  const prev = sel.value;
+  sel.innerHTML = "";
+  if (!state.members.length) {
+    const o = document.createElement("option");
+    o.textContent = "(no members yet)"; o.value = "";
+    sel.appendChild(o);
+    return;
+  }
+  state.members.forEach(m => {
+    const o = document.createElement("option");
+    o.value = m.id; o.textContent = m.name;
+    sel.appendChild(o);
+  });
+  if (prev) sel.value = prev;
+}
+
+async function checkDensity() {
+  if (!state.clubId) return;
+  try {
+    const d = await api("GET", "/clubs/" + state.clubId + "/density");
+    $("densityNote").textContent =
+      d.member_count + " member(s) · density met: " + (d.density_met ? "yes ✅" : "not yet");
+  } catch (e) { /* ignore */ }
+}
+
+// ---- cycles ----
+async function createCycle() {
+  if (!state.clubId) { toast("Select a club first", true); return; }
+  const start = $("cycleStart").value;
+  if (!start) { toast("Pick a start date", true); return; }
+  try {
+    const c = await api("POST", "/clubs/" + state.clubId + "/cycles",
+      { start_date: start });
+    toast("Cycle created");
+    state.cycleId = c.id;
+    loadCycles();
+  } catch (e) { toast(e.message, true); }
+}
+
+async function loadCycles() {
+  if (!state.clubId) return;
+  try {
+    const cycles = await api("GET", "/clubs/" + state.clubId + "/cycles");
+    const ul = $("cycleList");
+    ul.innerHTML = "";
+    if (!cycles.length) { ul.innerHTML = '<li class="muted">No cycles yet.</li>'; return; }
+    cycles.forEach(c => {
+      const li = document.createElement("li");
+      const left = document.createElement("div");
+      left.innerHTML = "<strong>" + c.start_date + " → " + c.end_date + "</strong>" +
+        '<div class="meta">status: ' + c.status + "</div>";
+      const btn = document.createElement("button");
+      btn.className = "secondary"; btn.style.marginTop = "0";
+      btn.textContent = (state.cycleId === c.id) ? "Selected" : "Select";
+      btn.dataset.id = c.id;
+      btn.addEventListener("click", () => { state.cycleId = btn.dataset.id; loadCycles(); loadGroups(); });
+      li.appendChild(left); li.appendChild(btn);
+      ul.appendChild(li);
+    });
+  } catch (e) { toast(e.message, true); }
+}
+
+async function runCycle() {
+  if (!state.cycleId) { toast("Create or select a cycle first", true); return; }
+  const seed = parseInt($("cycleSeed").value, 10) || 0;
+  try {
+    const groups = await api("POST", "/cycles/" + state.cycleId + "/commit", { seed });
+    toast("Committed " + groups.length + " group(s)");
+    loadCycles(); loadGroups();
+  } catch (e) { toast(e.message, true); }
+}
+
+// ---- groups & events ----
+function memberName(id) {
+  const m = state.members.find(x => x.id === id);
+  return m ? m.name : id.slice(0, 8);
+}
+
+async function loadGroups() {
+  if (!state.cycleId) { $("groups").innerHTML = ""; return; }
+  await loadMembers();
+  try {
+    const groups = await api("GET", "/cycles/" + state.cycleId + "/groups");
+    const box = $("groups");
+    box.innerHTML = "";
+    $("groupsHint").textContent = groups.length ? "" : "No groups — run the rotation.";
+    groups.forEach(g => {
+      const card = document.createElement("div");
+      card.className = "groupcard";
+      const mem = g.member_ids.map(id => {
+        const nm = escapeHtml(memberName(id));
+        return (id === g.owner_id) ? '<span class="owner">' + nm + " (owner)</span>" : nm;
+      }).join(", ");
+      card.innerHTML = "<h3>" + escapeHtml(g.name) +
+        ' <span class="pill plain">' + g.status + "</span></h3>" +
+        '<div class="members">' + mem + "</div>";
+      const btn = document.createElement("button");
+      btn.textContent = "Create event";
+      btn.dataset.id = g.id;
+      btn.addEventListener("click", () => createEvent(btn.dataset.id));
+      card.appendChild(btn);
+      box.appendChild(card);
+    });
+  } catch (e) { toast(e.message, true); }
+}
+
+async function createEvent(groupId) {
+  try {
+    const ev = await api("POST", "/groups/" + groupId + "/events", {});
+    const kind = ev.is_fallback ? "fallback (club-run)" : "owner-run";
+    toast("Event created — " + kind);
+  } catch (e) { toast(e.message, true); }
+}
+
+// ---- health ----
+async function loadHealth() {
+  if (!state.cycleId) { toast("Select a cycle first", true); return; }
+  try {
+    const reports = await api("GET", "/cycles/" + state.cycleId + "/health");
+    const ul = $("healthList");
+    ul.innerHTML = "";
+    if (!reports.length) { ul.innerHTML = '<li class="muted">No groups.</li>'; return; }
+    reports.forEach(r => {
+      const li = document.createElement("li");
+      const pct = Math.round(r.attendance_rate * 100);
+      li.innerHTML = "<div><strong>" + escapeHtml(r.group_name) + "</strong>" +
+        '<div class="meta">attendance ' + pct + "% · owner: " +
+        (r.has_owner ? "yes" : "NO") + "</div></div>";
+      const pill = document.createElement("span");
+      pill.className = "pill " + (r.at_risk ? "risk" : "ok");
+      pill.textContent = r.at_risk ? "AT-RISK" : "healthy";
+      li.appendChild(pill);
+      ul.appendChild(li);
+    });
+  } catch (e) { toast(e.message, true); }
+}
+
+// ---- member view (the customer experience) ----
+async function loadMyOrbit() {
+  const memberId = $("memberPicker").value;
+  if (!memberId) { toast("Pick a member first", true); return; }
+  const box = $("memberView");
+  box.innerHTML = '<div class="muted">Loading…</div>';
+  try {
+    // Fetch profile, group, upcoming, connections in parallel.
+    const [profile, grp, up, conns, sub] = await Promise.all([
+      api("GET", "/members/" + memberId),
+      api("GET", "/members/" + memberId + "/group"),
+      api("GET", "/members/" + memberId + "/upcoming"),
+      api("GET", "/members/" + memberId + "/connections"),
+      api("GET", "/members/" + memberId + "/subscription"),
+    ]);
+
+    let html = "";
+    // profile
+    html += '<div class="groupcard"><h3>' + escapeHtml(profile.name) + "</h3>" +
+      '<div class="members">reliability <strong>' + profile.reliability_score +
+      "</strong> · streak <strong>" + profile.current_streak +
+      "</strong> · people met <strong>" + profile.people_met + "</strong></div></div>";
+
+    // my group
+    if (grp.group) {
+      const mates = grp.groupmates.map(m => escapeHtml(m.name)).join(", ") || "(just you so far)";
+      html += '<div class="groupcard"><h3>My group: ' + escapeHtml(grp.group.name) +
+        '</h3><div class="members">' + mates + "</div></div>";
+    } else {
+      html += '<div class="groupcard"><div class="muted">You are not in a group yet — ' +
+        "you'll be placed when the next rotation runs.</div></div>";
+    }
+
+    // upcoming event + self-RSVP
+    if (up.event) {
+      const kind = up.event.is_fallback ? "club-hosted" : "member-hosted";
+      html += '<div class="groupcard"><h3>Next event</h3>' +
+        '<div class="members">' + escapeHtml(up.event.starts_at) +
+        " · " + kind + '</div>' +
+        '<button data-mid="' + memberId + '" class="rsvpSelfBtn">RSVP me</button></div>';
+    } else {
+      html += '<div class="groupcard"><div class="muted">No upcoming event yet.</div></div>';
+    }
+
+    // connections
+    if (conns.length) {
+      const names = conns.map(m => escapeHtml(m.name)).join(", ");
+      html += '<div class="groupcard"><h3>People I\'ve met (' + conns.length +
+        ')</h3><div class="members">' + names + "</div></div>";
+    } else {
+      html += '<div class="groupcard"><div class="muted">No connections yet — ' +
+        "they grow every cycle.</div></div>";
+    }
+
+    // block control
+    html += '<div class="groupcard"><h3>Safety</h3>' +
+      '<label>Block a member</label><select class="blockPicker">' +
+      state.members.filter(m => m.id !== memberId)
+        .map(m => '<option value="' + m.id + '">' + escapeHtml(m.name) + "</option>").join("") +
+      '</select><button data-mid="' + memberId + '" class="blockBtn secondary">Block</button></div>';
+
+    // membership / billing
+    const tier = (sub && sub.tier) ? sub.tier : "free";
+    const cancelling = sub && sub.cancel_at_period_end;
+    html += '<div class="groupcard"><h3>Membership</h3>' +
+      '<div class="members">Tier: <strong>' + escapeHtml(tier) + "</strong>" +
+      (cancelling ? " (cancels at period end)" : "") + "</div>";
+    if (tier === "free") {
+      html += '<button data-mid="' + memberId + '" class="subBtn">Upgrade to Plus ($9/mo)</button>';
+    } else {
+      html += '<button data-mid="' + memberId + '" class="cancelSubBtn secondary">Cancel (easy)</button>';
+    }
+    html += "</div>";
+
+    box.innerHTML = html;
+
+    // wire dynamic buttons (no inline onclick)
+    const rb = box.querySelector(".rsvpSelfBtn");
+    if (rb) rb.addEventListener("click", () => rsvpSelf(rb.dataset.mid));
+    const bb = box.querySelector(".blockBtn");
+    if (bb) bb.addEventListener("click", () => {
+      const other = box.querySelector(".blockPicker").value;
+      blockMember(bb.dataset.mid, other);
+    });
+    const sb = box.querySelector(".subBtn");
+    if (sb) sb.addEventListener("click", () => subscribeMember(sb.dataset.mid));
+    const cs = box.querySelector(".cancelSubBtn");
+    if (cs) cs.addEventListener("click", () => cancelMember(cs.dataset.mid));
+  } catch (e) {
+    box.innerHTML = '<div class="muted">Could not load: ' + escapeHtml(e.message) + "</div>";
+    toast(e.message, true);
+  }
+}
+
+async function rsvpSelf(memberId) {
+  try {
+    await api("POST", "/members/" + memberId + "/rsvp", {});
+    toast("You're RSVP'd ✅");
+    loadMyOrbit();
+  } catch (e) { toast(e.message, true); }
+}
+
+async function blockMember(memberId, otherId) {
+  if (!otherId) { toast("Pick someone to block", true); return; }
+  try {
+    await api("POST", "/members/" + memberId + "/block", { other_id: otherId });
+    toast("Blocked — you won't be grouped together again.");
+    loadMyOrbit();
+  } catch (e) { toast(e.message, true); }
+}
+
+// ---- V1 features (operator) ----
+async function createBigEvent() {
+  if (!state.clubId) { toast("Select a club first", true); return; }
+  const start = $("bigStart").value;
+  if (!start) { toast("Pick a date/time", true); return; }
+  const body = { starts_at: start + ":00" };
+  const cap = $("bigCap").value.trim();
+  if (cap) body.capacity = parseInt(cap, 10);
+  try {
+    const ev = await api("POST", "/clubs/" + state.clubId + "/big-events", body);
+    toast("Big event created");
+    loadBigEvents();
+  } catch (e) { toast(e.message, true); }
+}
+
+async function loadBigEvents() {
+  if (!state.clubId) return;
+  try {
+    const evs = await api("GET", "/clubs/" + state.clubId + "/big-events");
+    $("bigList").innerHTML = evs.length
+      ? evs.map(e => "• " + escapeHtml(e.starts_at) +
+          (e.capacity ? " (cap " + e.capacity + ")" : "")).join("<br>")
+      : "(none yet)";
+  } catch (e) { /* ignore */ }
+}
+
+async function checkVolunteers() {
+  if (!state.clubId) { toast("Select a club first", true); return; }
+  try {
+    const data = await api("GET", "/clubs/" + state.clubId + "/volunteers");
+    const cov = data.coverage || {};
+    const lines = Object.keys(cov).map(k => k + ": " + cov[k]).join(" · ");
+    const exp = (data.expiring_soon || []).length;
+    $("volCoverage").innerHTML = escapeHtml(lines) +
+      "<br>expiring soon: " + exp;
+  } catch (e) { toast(e.message, true); }
+}
+
+async function dispatchNotifications() {
+  try {
+    const r = await api("POST", "/notifications/dispatch", {});
+    $("dispatchNote").textContent = "sent " + r.sent + ", failed " + r.failed;
+    toast("Dispatched " + r.sent + " reminder(s)");
+  } catch (e) { toast(e.message, true); }
+}
+
+async function subscribeMember(memberId) {
+  try {
+    await api("POST", "/members/" + memberId + "/subscribe", {});
+    toast("Upgraded to Plus ✅");
+    loadMyOrbit();
+  } catch (e) { toast(e.message, true); }
+}
+
+async function cancelMember(memberId) {
+  try {
+    await api("POST", "/members/" + memberId + "/cancel", {});
+    toast("Cancelled (keeps benefits until renewal)");
+    loadMyOrbit();
+  } catch (e) { toast(e.message, true); }
+}
+
+// ---- misc ----
+function escapeHtml(s) {
+  return String(s)
+    .replaceAll("&", "&amp;").replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;").replaceAll('"', "&quot;");
+}
+
+async function ping() {
+  try { const h = await api("GET", "/health"); toast("API OK: " + h.status); }
+  catch (e) { toast("API unreachable: " + e.message, true); }
+}
+
+// ---- wire up ----
+$("createClubBtn").addEventListener("click", createClub);
+$("addMemberBtn").addEventListener("click", addMember);
+$("createCycleBtn").addEventListener("click", createCycle);
+$("runCycleBtn").addEventListener("click", runCycle);
+$("healthBtn").addEventListener("click", loadHealth);
+$("loadMineBtn").addEventListener("click", loadMyOrbit);
+$("createBigBtn").addEventListener("click", createBigEvent);
+$("volBtn").addEventListener("click", checkVolunteers);
+$("dispatchBtn").addEventListener("click", dispatchNotifications);
+$("pingBtn").addEventListener("click", ping);
+
+// default start date = today
+$("cycleStart").value = new Date().toISOString().slice(0, 10);
+loadClubs();
+</script>
+</body>
+</html>
