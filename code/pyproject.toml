@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "orbit-social-club"
+version = "0.1.0"
+description = "Orbit — a rotating social club engine (keep-50/swap-50 rotation, rotating ownership, health monitoring). Pure standard library core."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Orbit" }]
+keywords = ["social-club", "matching", "rotation", "community"]
+
+# The core has ZERO runtime dependencies — it is pure standard library.
+dependencies = []
+
+[project.optional-dependencies]
+# Nothing required to run tests either (stdlib unittest). These are optional
+# quality-of-life dev tools only.
+dev = ["mypy>=1.8", "ruff>=0.4"]
+
+[project.scripts]
+orbit-demo = "orbit.demo:main"
+
+[tool.setuptools]
+packages = ["orbit", "orbit.domain", "orbit.matching", "orbit.services"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.mypy]
+python_version = "3.10"
+strict = true

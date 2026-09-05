@@ -1,0 +1,13 @@
+# Keep the image lean and avoid shipping local state / caches.
+__pycache__/
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+tests/
+*.json
+!pyproject.toml
+.git/
+.gitignore
+*.md
+!README.md
